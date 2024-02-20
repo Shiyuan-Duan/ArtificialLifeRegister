@@ -56,7 +56,7 @@ def make_creature(dna_vector):
     return model
 
 
-dna_vector = [(0.2, 0.01, 1), (0.15, 0.02, 2), (0.25, 0.05, 3)]
+dna_vector = [(0.2, 0.01, 1), (1.5, 0.02, 2), (0.25, 0.05, 3)]
 creature = make_creature(dna_vector)
 
 
