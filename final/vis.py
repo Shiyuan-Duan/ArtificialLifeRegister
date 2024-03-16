@@ -1,14 +1,8 @@
-dna_vector = [(2, 0.1, 1), (1.5, 0.2, 2), (2.5, 0.15, 3)]
-colors = {
-    1: (1, 0, 0, 1),  # Red
-    2: (0, 1, 0, 1),  # Green
-    3: (0, 0, 1, 1)   # Blue
-}
-
 from dm_control import mujoco, mjcf
 import numpy as np
 import time
 import mujoco.viewer
+import pickle as pk
 def generate_random_dna(num_limbs=3):
     dna_vector = []
     for _ in range(num_limbs):
@@ -37,9 +31,9 @@ def create_limb(length, thickness, rgba):
 
 def map_color(color_id):
     colors = {
-        1: (1, 0, 0, 1),  # Red
+        3: (1, 0, 0, 1),  # Red
         2: (0, 1, 0, 1),  # Green
-        3: (0, 0, 1, 1)   # Blue
+        1: (0, 0, 1, 1)   # Blue
     }
     return colors.get(color_id, (0.5, 0.5, 0.5, 1))
 
@@ -64,13 +58,18 @@ def make_creature(dna_vector):
 
 
 # dna_vector = [(0.2, 0.01, 1), (1.5, 0.02, 2), (0.25, 0.05, 3)]
-num_limbs = np.random.randint(1, 8)
-dna_vector = generate_random_dna(num_limbs=num_limbs)
+EPOCH = 16
+with open('epoch_results.pkl', 'rb') as f:
+    results = pk.load(f)
+
+r = results[EPOCH]
+num_limbs = 4
+dna_vector = r['winner_dna']
 creature = make_creature(dna_vector)
 
 
 arena = mjcf.RootElement()
-arena.worldbody.add('geom', type='plane', size=[2, 2, .1])
+arena.worldbody.add('geom', type='plane', size=[50, 50, .1])
 arena.worldbody.add('light', pos=[0, 0, 3], dir=[0, 0, -1])
 
 creature_pos = (0, 0, 0.5)
@@ -87,12 +86,19 @@ viewer_handle = mujoco.viewer.launch_passive(model, data)
 t = 0
 while True:
     t += 0.01 
-    wiggle_amount = np.sin(t)  
-    
 
-    for i, _ in enumerate(dna_vector):
-        data.ctrl[i] = wiggle_amount * 5 
-        
+    wiggle_amount = np.sin(t)  
+    sine_component = np.sin(t)
+    cosine_component = np.cos(t)
+    for i, dna in enumerate(dna_vector):
+        # data.ctrl[i] = wiggle_amount * dna[-1] * 10
+        actuator_index_sine = i * 2
+        actuator_index_cosine = i * 2 + 1
+
+        # Set the actuator controls for the circular motion
+        # You would need to adjust the amplitude (e.g., dna[-1] * 10) based on your simulation specifics
+        data.ctrl[i] = sine_component * dna[-1] * 10
+        data.ctrl[i] = cosine_component * dna[-1] * 10
     
     mujoco.mj_step(model, data)
     viewer_handle.sync()
